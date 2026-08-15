@@ -168,8 +168,21 @@ router.put('/:table/:id', async (req, res) => {
   const table = req.params.table;
   if (!TABLES[table]) return res.status(404).json({ error: 'Tabel tidak dikenal: ' + table });
   if (table === 'kpis') return res.status(400).json({ error: 'KPI dihitung otomatis — tidak dapat diubah' });
-  const payload = filterPayload(table, req.body);
-  const perm = canWrite(req.user, table, payload);
+  let payload = filterPayload(table, req.body);
+  let perm = canWrite(req.user, table, payload);
+  if (!isAdmin(req.user) && table === 'toolings') {
+    const rows = await query('SELECT `supplierId` FROM `toolings` WHERE `id` = ? LIMIT 1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Data tidak ditemukan' });
+    if (rows[0].supplierId !== (req.user.supplierId || null)) {
+      return res.status(403).json({ error: 'Anda hanya dapat mengubah foto tooling milik supplier Anda' });
+    }
+    payload = filterPayload(table, {
+      partImage: payload.partImage,
+      toolImage: payload.toolImage,
+      toolImage2: payload.toolImage2
+    });
+    perm = { ok: true };
+  }
   if (!perm.ok) return res.status(403).json({ error: perm.error });
   const own = await checkSupplierTaskOwnership(req.user, table, req.params.id);
   if (!own.ok) return res.status(403).json({ error: own.error });

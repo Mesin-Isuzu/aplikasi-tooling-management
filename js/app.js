@@ -530,6 +530,9 @@ getToolingListView() {
     getToolingDetailView(id) {
         const t = this.data.toolings.find(x => x.id === id);
         if (!t) return `<h2>Tooling tidak ditemukan</h2>`;
+
+        const isSupplier = this.currentUser.role.includes('Supplier');
+        const canEditPhotos = isSupplier && !!this.currentUser.supplierId && t.supplierId === this.currentUser.supplierId;
         
         document.getElementById('header-title').innerText = `Detail Tooling: ${t.id}`;
 
@@ -559,17 +562,17 @@ getToolingListView() {
                         <div>
                             <span class="info-label">Foto Part</span>
                             ${t.partImage ? `<img src="${t.partImage}" alt="Part Image" style="width: 100%; height: auto; border-radius: 8px; margin-top: 0.5rem; border: 1px solid var(--border-color);">` : '<div style="background: #f1f5f9; padding: 2rem; text-align: center; border-radius: 8px; margin-top: 0.5rem; color: #64748b;">Belum ada foto</div>'}
-                            ${this.currentUser.role.includes('Supplier') ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem">${t.partImage ? `<button class="btn btn-danger btn-sm" onclick="app.removePhoto('${t.id}','partImage')" style="font-size:0.75rem"><i class="fas fa-trash"></i></button>` : ''}<button class="btn btn-primary btn-sm" onclick="app.openPhotoUploadModal('${t.id}','partImage')" style="font-size:0.75rem"><i class="fas fa-upload"></i> ${t.partImage ? 'Ganti' : 'Upload'}</button></div>` : ''}
+                            ${canEditPhotos ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem">${t.partImage ? `<button class="btn btn-danger btn-sm" onclick="app.removePhoto('${t.id}','partImage')" style="font-size:0.75rem"><i class="fas fa-trash"></i></button>` : ''}<button class="btn btn-primary btn-sm" onclick="app.openPhotoUploadModal('${t.id}','partImage')" style="font-size:0.75rem"><i class="fas fa-upload"></i> ${t.partImage ? 'Ganti' : 'Upload'}</button></div>` : ''}
                         </div>
                         <div>
                             <span class="info-label">Foto Tooling/Dies 1</span>
                             ${t.toolImage ? `<img src="${t.toolImage}" alt="Tooling Image 1" style="width: 100%; height: auto; border-radius: 8px; margin-top: 0.5rem; border: 1px solid var(--border-color);">` : '<div style="background: #f1f5f9; padding: 2rem; text-align: center; border-radius: 8px; margin-top: 0.5rem; color: #64748b;">Belum ada foto</div>'}
-                            ${this.currentUser.role.includes('Supplier') ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem">${t.toolImage ? `<button class="btn btn-danger btn-sm" onclick="app.removePhoto('${t.id}','toolImage')" style="font-size:0.75rem"><i class="fas fa-trash"></i></button>` : ''}<button class="btn btn-primary btn-sm" onclick="app.openPhotoUploadModal('${t.id}','toolImage')" style="font-size:0.75rem"><i class="fas fa-upload"></i> ${t.toolImage ? 'Ganti' : 'Upload'}</button></div>` : ''}
+                            ${canEditPhotos ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem">${t.toolImage ? `<button class="btn btn-danger btn-sm" onclick="app.removePhoto('${t.id}','toolImage')" style="font-size:0.75rem"><i class="fas fa-trash"></i></button>` : ''}<button class="btn btn-primary btn-sm" onclick="app.openPhotoUploadModal('${t.id}','toolImage')" style="font-size:0.75rem"><i class="fas fa-upload"></i> ${t.toolImage ? 'Ganti' : 'Upload'}</button></div>` : ''}
                         </div>
                         <div>
                             <span class="info-label">Foto Tooling/Dies 2</span>
                             ${t.toolImage2 ? `<img src="${t.toolImage2}" alt="Tooling Image 2" style="width: 100%; height: auto; border-radius: 8px; margin-top: 0.5rem; border: 1px solid var(--border-color);">` : '<div style="background: #f1f5f9; padding: 2rem; text-align: center; border-radius: 8px; margin-top: 0.5rem; color: #64748b;">Belum ada foto</div>'}
-                            ${this.currentUser.role.includes('Supplier') ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem">${t.toolImage2 ? `<button class="btn btn-danger btn-sm" onclick="app.removePhoto('${t.id}','toolImage2')" style="font-size:0.75rem"><i class="fas fa-trash"></i></button>` : ''}<button class="btn btn-primary btn-sm" onclick="app.openPhotoUploadModal('${t.id}','toolImage2')" style="font-size:0.75rem"><i class="fas fa-upload"></i> ${t.toolImage2 ? 'Ganti' : 'Upload'}</button></div>` : ''}
+                            ${canEditPhotos ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem">${t.toolImage2 ? `<button class="btn btn-danger btn-sm" onclick="app.removePhoto('${t.id}','toolImage2')" style="font-size:0.75rem"><i class="fas fa-trash"></i></button>` : ''}<button class="btn btn-primary btn-sm" onclick="app.openPhotoUploadModal('${t.id}','toolImage2')" style="font-size:0.75rem"><i class="fas fa-upload"></i> ${t.toolImage2 ? 'Ganti' : 'Upload'}</button></div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -2359,7 +2362,7 @@ getToolingListView() {
                 alert('Gagal mengunggah foto ke storage.');
                 return;
             }
-            try { await window.DTMS.updateTooling(toolId, t); } catch (e) { console.error(e); alert('Gagal menyimpan URL foto ke database.'); }
+            try { await window.DTMS.updateTooling(toolId, { [fieldType]: res.publicUrl }); } catch (e) { console.error(e); alert('Gagal menyimpan URL foto ke database.'); }
             this.closeModal('photo-upload-modal');
             alert('Foto berhasil diunggah!');
             document.getElementById('app-layout')?.remove(); this.router();
@@ -2382,7 +2385,7 @@ getToolingListView() {
         if (!confirm(`Hapus ${labels[fieldType] || 'foto'}?`)) return;
         t[fieldType] = '';
         if (window.DTMS && window.DTMS.enabled()) {
-            try { await window.DTMS.updateTooling(toolId, t); } catch (e) { console.error(e); alert('Gagal menghapus foto di database.'); }
+            try { await window.DTMS.updateTooling(toolId, { [fieldType]: '' }); } catch (e) { console.error(e); alert('Gagal menghapus foto di database.'); }
         }
         alert('Foto berhasil dihapus.');
         document.getElementById('app-layout')?.remove(); this.router();
