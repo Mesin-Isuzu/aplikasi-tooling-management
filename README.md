@@ -31,7 +31,8 @@ Aplikasi manajemen tooling (stamping die, injection mold, die casting) dengan fr
 | `POST /api/auth/signup` | Admin membuat akun (upsert by email) |
 | `PUT /api/auth/user/:email/password` | Admin reset password |
 | `GET /api/loadAll` | Semua koleksi dalam satu panggilan |
-| `GET/POST /api/:table` `PUT/DELETE /api/:table/:id` | CRUD generik (users, toolings, maintenanceLogs, supplierTasks, shootLogs, productionLogs, deliveryLogs, movementLogs, notifications, auditLogs, kpis) |
+| `GET/POST /api/:table` `PUT/DELETE /api/:table/:id` | CRUD generik (users, toolings, maintenanceLogs, supplierTasks, shootLogs, productionLogs, deliveryLogs, movementLogs, notifications, auditLogs) |
+| `GET /api/kpis` | KPI terhitung otomatis (VIEW di MySQL, read-only) |
 | `POST /api/upload` | Upload file (multipart: `path` + `file`) |
 | `GET /uploads/*` | File publik |
 
@@ -54,7 +55,7 @@ Aplikasi manajemen tooling (stamping die, injection mold, die casting) dengan fr
    ```
    Database kosong otomatis di-seed dari `js/data.js`.
    **Login: `admin` / `password`** (semua seed user memakai password default `password`).
-4. Frontend: set `js/config.js` → `window.DTMS_API_URL = 'http://localhost:3000';` lalu buka `index.html` (mis. via `python -m http.server 9999`).
+4. Frontend: set `js/config.js` → `window.DTMS_API_URL = 'http://localhost:3001';` lalu buka `index.html` (mis. via `python -m http.server 9999`).
 
 ## Deployment
 

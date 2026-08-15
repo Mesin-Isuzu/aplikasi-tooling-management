@@ -1,6 +1,8 @@
 // Seed MySQL dari js/data.js (hanya jika tabel users kosong)
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
+const vm = require('vm');
 const bcrypt = require('bcryptjs');
 const { pool, withRetry } = require('../config/db');
 
@@ -15,9 +17,10 @@ const supplierMap = {
 
 function loadMockData() {
   const code = fs.readFileSync(dataPath, 'utf8');
-  const window = {};
-  eval(code);
-  return window.dtmsData;
+  const sandbox = { window: {} };
+  vm.createContext(sandbox);
+  vm.runInContext(code, sandbox, { filename: 'data.js' });
+  return sandbox.window.dtmsData;
 }
 
 async function insertRows(conn, table, rows) {
@@ -122,7 +125,7 @@ async function seed() {
     }));
     await insertRows(conn, 'auditLogs', auditLogs);
 
-    await insertRows(conn, 'kpis', [{ id: 1, ...d.kpis }]);
+    // `kpis` adalah VIEW yang dihitung otomatis — tidak perlu di-seed.
 
     await conn.commit();
     console.log(`[seed] berhasil: ${users.length} users, ${toolings.length} toolings, ${maintenanceLogs.length} maintenance, ${supplierTasks.length} tasks, ${shootLogs.length} shootLogs, ${deliveryLogs.length} deliveryLogs, ${movementLogs.length} movements, ${notifications.length} notif, ${auditLogs.length} auditLogs.`);
@@ -141,7 +144,6 @@ async function seedIfNeeded() {
 }
 
 if (require.main === module) {
-  require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
   seedIfNeeded()
     .then(() => { console.log('Seed selesai.'); process.exit(0); })
     .catch(err => { console.error('Seed gagal:', err); process.exit(1); });

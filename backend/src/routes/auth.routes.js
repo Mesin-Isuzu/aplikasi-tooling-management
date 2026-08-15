@@ -130,9 +130,18 @@ router.put('/user/:email/password', requireAuth, requireAdmin, async (req, res) 
   }
 });
 
-// DELETE /api/auth/user/:email — penanda hapus akun (baris users dihapus via CRUD users)
+// DELETE /api/auth/user/:email — hapus akun
 router.delete('/user/:email', requireAuth, requireAdmin, async (req, res) => {
-  res.json({ data: { success: true }, error: null });
+  try {
+    const result = await query(
+      'DELETE FROM `users` WHERE LOWER(`email`) = ?',
+      [String(req.params.email).toLowerCase()]
+    );
+    if (!result.affectedRows) return res.status(404).json({ error: 'User tidak ditemukan' });
+    res.json({ data: { success: true }, error: null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

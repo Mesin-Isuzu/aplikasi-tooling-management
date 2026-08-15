@@ -136,17 +136,16 @@ router.post('/:table', async (req, res) => {
   try {
     if (table === 'users') {
       const bcrypt = require('bcryptjs');
-      const passwordHash = payload.passwordHash || (payload.password ? bcrypt.hashSync(String(payload.password), 10) : bcrypt.hashSync('password', 10));
-      delete payload.password;
-      payload.passwordHash = passwordHash;
+      const rawPassword = req.body && req.body.password;
+      payload.passwordHash = rawPassword
+        ? bcrypt.hashSync(String(rawPassword), 10)
+        : (payload.passwordHash || bcrypt.hashSync('password', 10));
       if (!payload.email) payload.email = `${payload.username}@dtms.mail`;
       payload.email = String(payload.email).toLowerCase();
     }
     if (table === 'kpis') {
-      await query('INSERT INTO `kpis` (`id`,`totalActive`,`openRepairs`,`pendingApprovals`,`overdueTasks`) VALUES (1,?,?,?,?) ON DUPLICATE KEY UPDATE `totalActive`=VALUES(`totalActive`), `openRepairs`=VALUES(`openRepairs`), `pendingApprovals`=VALUES(`pendingApprovals`), `overdueTasks`=VALUES(`overdueTasks`)',
-        [payload.totalActive || 0, payload.openRepairs || 0, payload.pendingApprovals || 0, payload.overdueTasks || 0]);
       const rows = await query('SELECT * FROM `kpis` LIMIT 1');
-      return res.status(201).json(rows[0]);
+      return res.status(201).json(rows[0] || { totalActive: 0, openRepairs: 0, pendingApprovals: 0, overdueTasks: 0 });
     }
     const cols = Object.keys(payload);
     const colSql = cols.map(c => '`' + c + '`').join(', ');
@@ -168,15 +167,15 @@ router.post('/:table', async (req, res) => {
 router.put('/:table/:id', async (req, res) => {
   const table = req.params.table;
   if (!TABLES[table]) return res.status(404).json({ error: 'Tabel tidak dikenal: ' + table });
+  if (table === 'kpis') return res.status(400).json({ error: 'KPI dihitung otomatis — tidak dapat diubah' });
   const payload = filterPayload(table, req.body);
   const perm = canWrite(req.user, table, payload);
   if (!perm.ok) return res.status(403).json({ error: perm.error });
   const own = await checkSupplierTaskOwnership(req.user, table, req.params.id);
   if (!own.ok) return res.status(403).json({ error: own.error });
   try {
-    if (table === 'users' && payload.password) {
-      payload.passwordHash = require('bcryptjs').hashSync(String(payload.password), 10);
-      delete payload.password;
+    if (table === 'users' && req.body && req.body.password) {
+      payload.passwordHash = require('bcryptjs').hashSync(String(req.body.password), 10);
     }
     const cols = Object.keys(payload).filter(c => c !== 'id');
     if (cols.length) {
@@ -196,6 +195,7 @@ router.put('/:table/:id', async (req, res) => {
 router.delete('/:table/:id', async (req, res) => {
   const table = req.params.table;
   if (!TABLES[table]) return res.status(404).json({ error: 'Tabel tidak dikenal: ' + table });
+  if (table === 'kpis') return res.status(400).json({ error: 'KPI dihitung otomatis — tidak dapat dihapus' });
   const perm = canWrite(req.user, table, {});
   if (!perm.ok) return res.status(403).json({ error: perm.error });
   const own = await checkSupplierTaskOwnership(req.user, table, req.params.id);

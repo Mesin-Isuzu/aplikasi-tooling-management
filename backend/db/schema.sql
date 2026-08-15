@@ -174,12 +174,12 @@ CREATE TABLE IF NOT EXISTS `auditLogs` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS `kpis` (
-  `id` INT NOT NULL DEFAULT 1,
-  `totalActive` INT DEFAULT 0,
-  `openRepairs` INT DEFAULT 0,
-  `pendingApprovals` INT DEFAULT 0,
-  `overdueTasks` INT DEFAULT 0,
-  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- KPI dihitung otomatis dari data riil (read-only)
+DROP VIEW IF EXISTS `kpis`;
+DROP TABLE IF EXISTS `kpis`;
+CREATE VIEW `kpis` AS
+  SELECT
+    (SELECT COUNT(*) FROM `toolings` WHERE `status` = 'Aktif') AS `totalActive`,
+    (SELECT COUNT(*) FROM `maintenanceLogs` WHERE `status` IN ('Menunggu Persetujuan', 'Sedang Berlangsung')) AS `openRepairs`,
+    (SELECT COUNT(*) FROM `movementLogs` WHERE `status` = 'Menunggu Persetujuan') AS `pendingApprovals`,
+    (SELECT COUNT(*) FROM `supplierTasks` WHERE `status` = 'Overdue') AS `overdueTasks`;

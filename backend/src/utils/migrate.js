@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const { pool, withRetry } = require('../config/db');
 
 const schemaPath = path.join(__dirname, '..', '..', 'db', 'schema.sql');
@@ -22,7 +23,6 @@ async function migrate() {
 }
 
 if (require.main === module) {
-  require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
   migrate()
     .then(() => { console.log('Migrasi selesai.'); process.exit(0); })
     .catch(err => { console.error('Migrasi gagal:', err); process.exit(1); });
