@@ -59,18 +59,14 @@ Aplikasi manajemen tooling (stamping die, injection mold, die casting) dengan fr
 
 ## Deployment
 
-### Backend → Railway (database MySQL cloud via plugin)
-1. Buat project baru di [Railway](https://railway.app) → **New Project → Deploy from GitHub repo** (pilih repo ini) atau Empty Project.
-2. **Add Plugin → MySQL** (atau pilih "Add MySQL" saat create service). Railway otomatis meng-inject kredensial ke service backend via env var `DATABASE_URL` / `MYSQLHOST` — **backend langsung terhubung tanpa konfigurasi tambahan**. Migrasi & seed database berjalan otomatis saat pertama kali server start.
-3. Set environment variables tambahan di service backend:
+### Backend → Railway
+1. Di [Railway](https://railway.app): New Project → Deploy from GitHub repo (repo ini) — service backend otomatis terhubung & auto-deploy tiap push ke `main`.
+2. Add Plugin → MySQL (memberi env `DATABASE_URL`/`MYSQL_URL`). Migrasi & seed berjalan otomatis saat start pertama.
+3. Set environment variables di service backend:
    - `JWT_SECRET` — string acak panjang
-   - `FRONTEND_URL` — URL GitHub Pages (mis. `https://username.github.io`)
-   - `PUBLIC_API_URL` — URL publik backend (mis. `https://xxx.up.railway.app`)
+   - `FRONTEND_URL` — URL GitHub Pages (mis. `https://mesin-isuzu.github.io`)
    - `AUTO_SEED=true` (pertama kali; bisa dimatikan setelahnya)
-4. Di GitHub repo → Settings → Secrets and variables → Actions:
-   - `RAILWAY_TOKEN` — dari Railway (Account → Tokens)
-   - `RAILWAY_PROJECT_ID` — ID project Railway (di Settings project)
-5. Push ke `main` → workflow `deploy-backend.yml` menjalankan `railway up`.
+4. Deploy manual cadangan: workflow `deploy-backend.yml` (workflow_dispatch) memakai secret `RAILWAY_PROJECT_ACCESS_TOKEN` + variables `RAILWAY_SERVICE_ID`, `RAILWAY_ENVIRONMENT_ID`.
 
 > Untuk pengembangan lokal tetap bisa memakai MySQL lokal (XAMPP/Laragon) dengan mengisi `backend/.env`.
 

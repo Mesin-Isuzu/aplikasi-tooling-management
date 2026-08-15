@@ -1,35 +1,23 @@
 name: Deploy Backend to Railway
 
+# Service backend di Railway sudah terhubung langsung ke repo GitHub ini
+# (auto-deploy tiap push ke main). Workflow ini adalah pemicu manual cadangan
+# via Railway GraphQL API (project token).
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Link Railway project
-        working-directory: backend
+      - name: Trigger deploy via Railway API
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway link -p ${{ secrets.RAILWAY_PROJECT_ID }}
-
-      - name: Deploy to Railway
-        working-directory: backend
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --ci
+          PROJECT_ACCESS_TOKEN: ${{ secrets.RAILWAY_PROJECT_ACCESS_TOKEN }}
+          SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID }}
+          ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+        run: |
+          curl -sS -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Project-Access-Token: $PROJECT_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\":\"mutation { serviceInstanceDeployV2(serviceId: \\\"$SERVICE_ID\\\", environmentId: \\\"$ENVIRONMENT_ID\\\") }\"}"

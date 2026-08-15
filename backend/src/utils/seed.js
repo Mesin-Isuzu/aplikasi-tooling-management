@@ -6,7 +6,10 @@ const vm = require('vm');
 const bcrypt = require('bcryptjs');
 const { pool, withRetry } = require('../config/db');
 
-const dataPath = path.join(__dirname, '..', '..', '..', 'js', 'data.js');
+const dataCandidates = [
+  path.join(__dirname, '..', '..', '..', 'js', 'data.js'),   // dev lokal (repo root)
+  path.join(__dirname, '..', '..', 'db', 'data.js')          // deploy (hanya folder backend)
+];
 const DEFAULT_PASSWORD = process.env.SEED_PASSWORD || 'password';
 
 const supplierMap = {
@@ -16,6 +19,8 @@ const supplierMap = {
 };
 
 function loadMockData() {
+  const dataPath = dataCandidates.find(p => fs.existsSync(p));
+  if (!dataPath) throw new Error('File data seed tidak ditemukan');
   const code = fs.readFileSync(dataPath, 'utf8');
   const sandbox = { window: {} };
   vm.createContext(sandbox);
@@ -140,6 +145,10 @@ async function seed() {
 
 async function seedIfNeeded() {
   if (process.env.AUTO_SEED === 'false') return;
+  if (!dataCandidates.some(p => fs.existsSync(p))) {
+    console.warn('[seed] File data tidak ditemukan — seed dilewati.');
+    return;
+  }
   await withRetry(seed, 3, 5000);
 }
 
